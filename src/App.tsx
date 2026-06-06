@@ -37,6 +37,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [showCareerWins, setShowCareerWins] = useState(false);
   const [difficulty, setDifficulty] = useState<number>(1);
+  // footer uses static numbers for now
 
   const handleRoll = useCallback(async () => {
     setLoading(true);
@@ -107,7 +108,7 @@ export default function App() {
         <div className="brand">
           <img src="/f1-logo.svg" alt="Formula 1" className="f1-logo" />
           <div className="brand-text">
-            <span className="logo-text">Unbeaten</span>
+            <span className="logo-text">21-0</span>
             <p className="tagline">Dream Season · 1950 — 2025</p>
           </div>
         </div>
@@ -178,7 +179,22 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <span>made by Priyansh</span>
+        <div className="footer-top-stats">
+          <div className="stat">
+            <div className="stat-num">185</div>
+            <div className="stat-label">constructors</div>
+          </div>
+          <div className="stat">
+            <div className="stat-num">77</div>
+            <div className="stat-label">tracks</div>
+          </div>
+          <div className="stat">
+            <div className="stat-num">915</div>
+            <div className="stat-label">drivers</div>
+          </div>
+        </div>
+
+        <div className="footer-middle">made by Priyansh ❤️</div>
       </footer>
     </div>
   );

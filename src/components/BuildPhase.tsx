@@ -33,7 +33,8 @@ export function BuildPhase({
   const [constructorId, setConstructorId] = useState<string | null>(null);
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
   const [search, setSearch] = useState('');
-  const [difficulty, setDifficulty] = useState<number>(1);
+  // difficulty is fixed to the hardest setting
+  const difficulty = 2;
 
   const displayedConstructors = useMemo(() => {
     const list = [...constructors];
@@ -115,7 +116,6 @@ export function BuildPhase({
 
   return (
     <section className="phase build-phase">
-      <p className="phase-label">Build · {season} calendar</p>
       <h2>Pick your team</h2>
       <p className="phase-desc">
         Pick 1 constructor and 2 drivers from the pool.
@@ -243,21 +243,7 @@ export function BuildPhase({
           </span>
         </label>
 
-        <label className="option-toggle" style={{ alignItems: 'center' }}>
-          <input
-            type="range"
-            min={0.8}
-            max={1.6}
-            step={0.05}
-            value={difficulty}
-            onChange={(e) => setDifficulty(Number(e.target.value))}
-            style={{ width: '160px' }}
-          />
-          <span className="option-toggle-text">
-            <strong>Difficulty</strong>
-            <span>Make the simulation harder (higher = harder): {difficulty.toFixed(2)}</span>
-          </span>
-        </label>
+  {/* difficulty is fixed to the hardest setting by default */}
       </div>
 
       <button

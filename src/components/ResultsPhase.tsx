@@ -37,10 +37,6 @@ export function ResultsPhase({
 }: Props) {
   const wdc = driverStandings[0];
   const wcc = constructorStandings[0];
-  const userWdcPos =
-    driverStandings.findIndex((s) => s.isUser) + 1;
-  const userWccPos =
-    constructorStandings.findIndex((s) => s.isUser) + 1;
   const userWonWdc = wdc?.isUser ?? false;
   const userWonWcc = wcc?.isUser ?? false;
   const userCtorWins = races.reduce((acc, race) => {
@@ -51,38 +47,12 @@ export function ResultsPhase({
   return (
     <section className="phase results-phase">
       <p className="phase-label">{season} · Simulated</p>
-      {/* compact top summary */}
-      <div className="summary-top">
-        <h2 className="wins-count">{userCtorWins}/{races.length} wins</h2>
-        <p className="ranks-line">WDC P{userWdcPos} · WCC P{userWccPos}</p>
-      </div>
-
       <div
         className={`champion-banner ${userWonWdc || userWonWcc ? 'victory' : 'defeat'}`}
       >
-        {userWonWdc && userWonWcc && (
-          <>
-            <h2>Double champion!</h2>
-            <p>You won both WDC and WCC</p>
-          </>
-        )}
-        {userWonWdc && !userWonWcc && (
-          <>
-            <h2>World Drivers&apos; Champion!</h2>
-            <p>Your driver took the WDC</p>
-          </>
-        )}
-        {!userWonWdc && userWonWcc && (
-          <>
-            <h2>Constructors&apos; Champions!</h2>
-            <p>Your team won the WCC</p>
-          </>
-        )}
-        {!userWonWdc && !userWonWcc && (
-          <>
-            <h2>Season over</h2>
-          </>
-        )}
+        <>
+          <h2 className="wins-count">{userCtorWins}/{races.length} wins</h2>
+        </>
       </div>
 
   {/* detailed standings and lists follow */}

@@ -36,7 +36,10 @@ export function CalendarPhase({
 
       {error && <p className="error">{error}</p>}
       {loading && loadingMessage && (
-        <p className="loading-msg">{loadingMessage}</p>
+        <>
+          <div className="spinner" aria-hidden="true" />
+          <p className="loading-msg">{loadingMessage}</p>
+        </>
       )}
 
       <button
@@ -44,7 +47,7 @@ export function CalendarPhase({
         onClick={onContinue}
         disabled={loading}
       >
-        {loading ? 'Loading teams…' : 'Pick your team →'}
+        {loading ? 'Loading teams…' : 'Simulate →'}
       </button>
     </section>
   );
