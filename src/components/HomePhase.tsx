@@ -17,9 +17,9 @@ export function HomePhase({
     <section className="phase home-phase">
       <div className="home-hero-visual simple-hero">
         <div className="hero-copy">
-          <h1 className="hero-title">Roll the dice. Build your dream team.</h1>
+          <h1 className="hero-title">Build your dream team.</h1>
           <p style={{ maxWidth: 640, margin: '0.5rem auto 1.25rem', color: 'var(--text-muted)' }}>
-            Draw a constructor and two drivers from across F1 history, then simulate the season — did you win them all?
+            Pick a constructor and two drivers from across F1 history, then simulate the season — did you win them all?
           </p>
         </div>
       </div>

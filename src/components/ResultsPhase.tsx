@@ -76,7 +76,7 @@ export function ResultsPhase({
             </div>
             {actualDriverChampion && (
               <p className="actual-result">
-                Real {season}: {driverLabel(actualDriverChampion)}
+                Actual winner in {season}: {driverLabel(actualDriverChampion)}
               </p>
             )}
           </div>
@@ -100,7 +100,7 @@ export function ResultsPhase({
             </div>
             {actualConstructorChampion && (
               <p className="actual-result">
-                Real {season}: {actualConstructorChampion.name}
+                Actual winner in {season}: {actualConstructorChampion.name}
               </p>
             )}
           </div>
