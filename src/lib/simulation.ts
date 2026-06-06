@@ -83,16 +83,21 @@ export function buildFantasyGrid(
 }
 
 function randomNoise(scale: number): number {
+  // heavier-tailed noise: use more samples so extremes are likelier
   let sum = 0;
-  for (let i = 0; i < 6; i += 1) sum += Math.random();
-  return (sum - 3) * scale;
+  for (let i = 0; i < 10; i += 1) sum += Math.random();
+  return (sum - 5) * scale;
 }
 
-function simulateRace(grid: GridEntry[], season: number): RaceResult[] {
+function simulateRace(grid: GridEntry[], season: number, difficulty = 1): RaceResult[] {
+  // difficulty >1 makes races harder (more DNFs, more variability)
   const scored = grid.map((entry) => {
-    const dnfChance = Math.max(0.02, 0.18 - entry.rating / 120);
+    // base DNF increases with difficulty and lower-rated drivers
+    const baseDnf = 0.12; // higher baseline
+    const ratingFactor = Math.max(0, (90 - entry.rating) / 220);
+    const dnfChance = Math.min(0.9, Math.max(0.02, baseDnf + ratingFactor * 0.35) * difficulty);
     const dnf = Math.random() < dnfChance;
-    const performance = entry.rating + randomNoise(12);
+    const performance = entry.rating + randomNoise(14 * difficulty);
     return { entry, performance, dnf };
   });
 
@@ -143,6 +148,7 @@ export function simulateSeason(
   races: Race[],
   pool: FantasyPool,
   userTeam: UserTeam,
+  difficulty = 1,
 ): SimulatedRace[] {
   const grid = buildFantasyGrid(pool, userTeam);
 
@@ -157,7 +163,7 @@ export function simulateSeason(
       wikiUrl: race.Circuit.url ?? race.Circuit.wikiUrl,
       layoutUrl: race.Circuit.layoutUrl ?? null,
     },
-    results: simulateRace(grid, parseInt(race.season, 10)),
+    results: simulateRace(grid, parseInt(race.season, 10), difficulty),
   }));
 }
 

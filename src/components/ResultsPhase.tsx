@@ -43,10 +43,19 @@ export function ResultsPhase({
     constructorStandings.findIndex((s) => s.isUser) + 1;
   const userWonWdc = wdc?.isUser ?? false;
   const userWonWcc = wcc?.isUser ?? false;
+  const userCtorWins = races.reduce((acc, race) => {
+    const winner = race.results.find((r) => r.position === 1 && r.status === 'Finished');
+    return acc + (winner && winner.constructorId === userTeam.constructor.constructorId ? 1 : 0);
+  }, 0);
 
   return (
     <section className="phase results-phase">
       <p className="phase-label">{season} · Simulated</p>
+      {/* compact top summary */}
+      <div className="summary-top">
+        <h2 className="wins-count">{userCtorWins}/{races.length} wins</h2>
+        <p className="ranks-line">WDC P{userWdcPos} · WCC P{userWccPos}</p>
+      </div>
 
       <div
         className={`champion-banner ${userWonWdc || userWonWcc ? 'victory' : 'defeat'}`}
@@ -72,12 +81,11 @@ export function ResultsPhase({
         {!userWonWdc && !userWonWcc && (
           <>
             <h2>Season over</h2>
-            <p>
-              WDC P{userWdcPos} · WCC P{userWccPos}
-            </p>
           </>
         )}
       </div>
+
+  {/* detailed standings and lists follow */}
 
       <div className="standings-grid">
         {hasDriverChampionship(season) && (
@@ -137,31 +145,8 @@ export function ResultsPhase({
         </p>
       </div>
 
-      <details className="race-log">
-        <summary>Full race results ({races.length} GPs)</summary>
-        {races.map((race) => (
-          <div key={race.round} className="race-log-entry">
-            <h4>
-              R{race.round} — {race.raceName}
-            </h4>
-            <ol>
-              {race.results
-                .filter((r) => r.status === 'Finished')
-                .slice(0, 5)
-                .map((r) => (
-                  <li
-                    key={r.driverId}
-                    className={r.isUserDriver ? 'user-row' : ''}
-                  >
-                    P{r.position} {r.driver.givenName}{' '}
-                    {r.driver.familyName} ({r.constructor.name}) —{' '}
-                    {r.points} pts
-                  </li>
-                ))}
-            </ol>
-          </div>
-        ))}
-      </details>
+      {/* Summary: show how many races each constructor won out of total */}
+  {/* detailed race wins removed per request */}
 
       <button className="btn-primary" onClick={onRestart}>
         Roll again →

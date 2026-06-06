@@ -6,7 +6,7 @@ Roll a random season (1950–2025) for the **calendar only**. Drivers and constr
 
 ## Fonts
 
-Uses [Raleway](https://fonts.google.com/specimen/Raleway) for body text and [Orbitron](https://fonts.google.com/specimen/Orbitron) for headings, cards, calendars, and driver data (loaded via `src/fonts.css`).
+Uses [Orbitron](https://fonts.google.com/specimen/Orbitron) for body text, headings, cards, calendars, and driver data (loaded via `src/fonts.css`).
 
 ## Requirements
 

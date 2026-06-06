@@ -1,3 +1,5 @@
+// inline SVG used for the hero car to avoid external asset loading
+
 interface Props {
   onRoll: () => void;
   loading: boolean;
@@ -13,11 +15,15 @@ export function HomePhase({
 }: Props) {
   return (
     <section className="phase home-phase">
-      <h1 className="hero-title">
-        Roll the dice.
-        <br />
-        <em>Build your team.</em>
-      </h1>
+      <div className="home-hero-visual simple-hero">
+        <div className="hero-trophy">
+          <img src="/trophy.png" alt="Trophy" className="hero-img trophy-img" />
+        </div>
+
+        <div className="hero-car">
+          <img src="/car.png" alt="F1 car" className="hero-img car-img" />
+        </div>
+      </div>
 
       {error && <p className="error">{error}</p>}
       {loading && loadingMessage && (
@@ -29,7 +35,7 @@ export function HomePhase({
         onClick={onRoll}
         disabled={loading}
       >
-        {loading ? 'Rolling…' : 'Roll →'}
+        {loading ? 'Working…' : 'Pick my team →'}
       </button>
     </section>
   );

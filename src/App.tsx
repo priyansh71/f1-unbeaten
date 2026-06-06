@@ -36,6 +36,7 @@ export default function App() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [showCareerWins, setShowCareerWins] = useState(false);
+  const [difficulty, setDifficulty] = useState<number>(1);
 
   const handleRoll = useCallback(async () => {
     setLoading(true);
@@ -47,7 +48,7 @@ export default function App() {
       try {
         setLoadingMessage(`Loading ${picked} calendar…`);
         const calendar = await loadCalendar(picked);
-        setLoadingMessage(`Scouting drivers, teams & photos…`);
+        setLoadingMessage(`Scouting drivers, constructors and tracks…`);
         const pool = await loadFantasyPool(picked);
         const champions = await loadChampions(picked);
 
@@ -56,7 +57,8 @@ export default function App() {
         setFantasyPool(pool);
         setActualDriverChampion(champions.actualDriverChampion);
         setActualConstructorChampion(champions.actualConstructorChampion);
-        setPhase('calendar');
+  // Show constructors & drivers first (build) with wins checkbox
+  setPhase('build');
         setLoading(false);
         setLoadingMessage('');
         return;
@@ -73,19 +75,7 @@ export default function App() {
     setLoadingMessage('');
   }, []);
 
-  const handleCalendarContinue = useCallback(() => {
-    if (fantasyPool) setPhase('build');
-  }, [fantasyPool]);
-
-  const handleBuildComplete = useCallback(
-    (team: UserTeam) => {
-      if (!fantasyPool || !races.length) return;
-      setUserTeam(team);
-      setSimulatedRaces(simulateSeason(races, fantasyPool, team));
-      setPhase('simulate');
-    },
-    [fantasyPool, races],
-  );
+  // (Flow now handled inline when build/calendar complete)
 
   const handleSimulateComplete = useCallback(() => {
     setPhase('results');
@@ -112,7 +102,7 @@ export default function App() {
       : null;
 
   return (
-    <div className="app">
+    <div className={`app ${phase === 'home' ? 'home-full' : ''}`}>
       <header className="header">
         <div className="brand">
           <img src="/f1-logo.svg" alt="Formula 1" className="f1-logo" />
@@ -133,26 +123,36 @@ export default function App() {
           />
         )}
 
-        {phase === 'calendar' && season && races.length > 0 && (
-          <CalendarPhase
-            season={season}
-            races={races}
-            showCareerWins={showCareerWins}
-            onShowCareerWinsChange={setShowCareerWins}
-            onContinue={handleCalendarContinue}
-            loading={poolLoading}
-            loadingMessage={loadingMessage}
-            error={error}
-          />
-        )}
-
         {phase === 'build' && season && fantasyPool && (
           <BuildPhase
             season={season}
             drivers={fantasyPool.drivers}
             constructors={fantasyPool.constructors}
             showCareerWins={showCareerWins}
-            onComplete={handleBuildComplete}
+            onShowCareerWinsChange={setShowCareerWins}
+            onComplete={(team: UserTeam, d: number) => {
+              // after picking drivers/constructors, save difficulty and show the tracks page
+              setUserTeam(team);
+              setDifficulty(d);
+              setPhase('calendar');
+            }}
+          />
+        )}
+
+        {phase === 'calendar' && season && races.length > 0 && (
+          <CalendarPhase
+            season={season}
+            races={races}
+            onContinue={() => {
+              if (fantasyPool && userTeam) {
+                // simulate using chosen team and difficulty
+                setSimulatedRaces(simulateSeason(races, fantasyPool, userTeam, difficulty));
+                setPhase('simulate');
+              }
+            }}
+            loading={poolLoading}
+            loadingMessage={loadingMessage}
+            error={error}
           />
         )}
 
@@ -178,8 +178,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <span>Data via F1DB (local)</span>
-        <span>Roll · Build · Simulate · Champion</span>
+        <span>made by Priyansh</span>
       </footer>
     </div>
   );

@@ -3,8 +3,6 @@ import type { Race } from '../types';
 interface Props {
   season: number;
   races: Race[];
-  showCareerWins: boolean;
-  onShowCareerWinsChange: (value: boolean) => void;
   onContinue: () => void;
   loading?: boolean;
   loadingMessage?: string;
@@ -14,8 +12,6 @@ interface Props {
 export function CalendarPhase({
   season,
   races,
-  showCareerWins,
-  onShowCareerWinsChange,
   onContinue,
   loading,
   loadingMessage,
@@ -36,17 +32,7 @@ export function CalendarPhase({
         ))}
       </div>
 
-      <label className="option-toggle">
-        <input
-          type="checkbox"
-          checked={showCareerWins}
-          onChange={(e) => onShowCareerWinsChange(e.target.checked)}
-        />
-        <span className="option-toggle-text">
-          <strong>Show career wins</strong>
-          <span>Reveal win counts when picking drivers & teams</span>
-        </span>
-      </label>
+  {/* wins checkbox removed from tracks page; it's shown on the Build page */}
 
       {error && <p className="error">{error}</p>}
       {loading && loadingMessage && (
