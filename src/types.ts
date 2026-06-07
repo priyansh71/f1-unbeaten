@@ -112,7 +112,14 @@ export interface ChampionshipStanding {
   isUser: boolean;
 }
 
-export type GamePhase = 'home' | 'calendar' | 'build' | 'simulate' | 'results';
+export type GamePhase =
+  | 'home'
+  | 'calendar'
+  | 'build'
+  | 'simulate'
+  | 'results'
+  | 'leaderboard'
+  | 'profile';
 
 export interface UserTeam {
   constructor: Constructor;

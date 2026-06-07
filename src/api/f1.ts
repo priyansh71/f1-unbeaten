@@ -93,6 +93,21 @@ async function getDriverStandings(season: number): Promise<DriverStanding[]> {
   return standings;
 }
 
+// load and cache the full driver list (from /data/drivers.json)
+let allDriversPromise: Promise<Driver[]> | null = null;
+export async function getAllDrivers(): Promise<Driver[]> {
+  if (allDriversPromise) return allDriversPromise;
+  allDriversPromise = (async () => {
+    try {
+      const list = await loadJson<Driver[]>('drivers.json');
+      return list ?? [];
+    } catch {
+      return [];
+    }
+  })();
+  return allDriversPromise;
+}
+
 async function getConstructorStandings(
   season: number,
 ): Promise<ConstructorStanding[]> {
@@ -107,17 +122,67 @@ async function getConstructorStandings(
   return standings;
 }
 
+let allConstructorsPromise: Promise<Constructor[]> | null = null;
+export async function getAllConstructors(): Promise<Constructor[]> {
+  if (allConstructorsPromise) return allConstructorsPromise;
+  allConstructorsPromise = (async () => {
+    try {
+      const list = await loadJson<Constructor[]>('constructors.json');
+      return list ?? [];
+    } catch {
+      return [];
+    }
+  })();
+  return allConstructorsPromise;
+}
+
 async function pickRandomDrivers(
   asOfSeason: number,
 ): Promise<{ driver: Driver; originSeason: number }[]> {
   const seen = new Set<string>();
   const picks: { driver: Driver; originSeason: number }[] = [];
-  let guard = 0;
 
+  // try to fetch a batch of random seasons' standings in parallel to reduce latency
+  const batchSize = Math.min(8, asOfSeason - 1950 + 1);
+  const seasons = new Set<number>();
+  while (seasons.size < Math.min(6, batchSize)) {
+    const season = 1950 + Math.floor(Math.random() * (asOfSeason - 1950 + 1));
+    seasons.add(season);
+  }
+
+  const seasonList = Array.from(seasons);
+  const standingsResults = await Promise.all(
+    seasonList.map(async (s) => {
+      const arr = await getDriverStandings(s).catch(() => []);
+      return { season: s, arr };
+    }),
+  );
+
+  // flatten into { row, season } so we preserve origin season
+  const candidates = standingsResults.flatMap((sr) => sr.arr.map((row) => ({ row, season: sr.season })));
+  // simple in-place Fisher-Yates shuffle
+  for (let i = candidates.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = candidates[i];
+    candidates[i] = candidates[j];
+    candidates[j] = tmp;
+  }
+
+  for (const item of candidates) {
+    if (picks.length >= DRIVER_COUNT) break;
+    const row = item.row as unknown as DriverStanding;
+    const seasonOfRow = item.season;
+    if (!row || !row.Driver) continue;
+    if (seen.has(row.Driver.driverId)) continue;
+    seen.add(row.Driver.driverId);
+    picks.push({ driver: row.Driver, originSeason: seasonOfRow ?? 1950 });
+  }
+
+  // fallback to original loop (cached getDriverStandings will be cheaper) if still short
+  let guard = 0;
   while (picks.length < DRIVER_COUNT && guard < 80) {
     guard += 1;
-    const season =
-      1950 + Math.floor(Math.random() * (asOfSeason - 1950 + 1));
+    const season = 1950 + Math.floor(Math.random() * (asOfSeason - 1950 + 1));
     const standings = await getDriverStandings(season);
     if (!standings.length) continue;
 
@@ -136,14 +201,47 @@ async function pickRandomConstructors(
 ): Promise<{ constructor: Constructor; originSeason: number }[]> {
   const seen = new Set<string>();
   const picks: { constructor: Constructor; originSeason: number }[] = [];
-  let guard = 0;
   const minSeason = 1958;
 
+  // batch-fetch a few seasons of constructor standings
+  const batchSize = Math.min(6, Math.max(1, asOfSeason - minSeason + 1));
+  const seasons = new Set<number>();
+  while (seasons.size < Math.min(5, batchSize)) {
+    const season = minSeason + Math.floor(Math.random() * (asOfSeason - minSeason + 1));
+    seasons.add(season);
+  }
+
+  const seasonList = Array.from(seasons);
+  const standingsResults = await Promise.all(
+    seasonList.map(async (s) => {
+      const arr = await getConstructorStandings(s).catch(() => []);
+      return { season: s, arr };
+    }),
+  );
+
+  const candidates = standingsResults.flatMap((sr) => sr.arr.map((row) => ({ row, season: sr.season })));
+  for (let i = candidates.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = candidates[i];
+    candidates[i] = candidates[j];
+    candidates[j] = tmp;
+  }
+
+  for (const item of candidates) {
+    if (picks.length >= CONSTRUCTOR_COUNT) break;
+    const row = item.row as unknown as ConstructorStanding;
+    const seasonOfRow = item.season;
+    if (!row || !row.Constructor) continue;
+    if (seen.has(row.Constructor.constructorId)) continue;
+    seen.add(row.Constructor.constructorId);
+    picks.push({ constructor: row.Constructor, originSeason: seasonOfRow ?? minSeason });
+  }
+
+  // fallback loop if we still haven't filled picks
+  let guard = 0;
   while (picks.length < CONSTRUCTOR_COUNT && guard < 60) {
     guard += 1;
-    const season =
-      minSeason +
-      Math.floor(Math.random() * (asOfSeason - minSeason + 1));
+    const season = minSeason + Math.floor(Math.random() * (asOfSeason - minSeason + 1));
     const standings = await getConstructorStandings(season);
     if (!standings.length) continue;
 
@@ -151,10 +249,7 @@ async function pickRandomConstructors(
     if (seen.has(row.Constructor.constructorId)) continue;
 
     seen.add(row.Constructor.constructorId);
-    picks.push({
-      constructor: row.Constructor,
-      originSeason: season,
-    });
+    picks.push({ constructor: row.Constructor, originSeason: season });
   }
 
   return picks;
@@ -197,21 +292,32 @@ export async function loadFantasyPool(
     constructors: constructors.sort((a, b) => b.careerWins - a.careerWins),
   };
 
-  await Promise.all([
-    mapWithConcurrency(pool.drivers, async (d) => {
-      if (!d.imageUrl) {
-        d.imageUrl =
-          d.driver.imageUrl ?? (await fetchWikiImage(d.driver.url));
+  // fetch missing images in background (don't block UI). This improves perceived
+  // responsiveness: we show the Build phase immediately and populate images when ready.
+  void (async () => {
+    try {
+      await Promise.all([
+        mapWithConcurrency(pool.drivers, async (d) => {
+          if (!d.imageUrl) {
+            d.imageUrl = d.driver.imageUrl ?? (await fetchWikiImage(d.driver.url));
+          }
+        }),
+        mapWithConcurrency(pool.constructors, async (c) => {
+          if (!c.imageUrl) {
+            c.imageUrl = c.constructor.imageUrl ?? (await fetchWikiConstructorImage(c.constructor.url));
+          }
+        }),
+      ]);
+      // notify listeners that images for this season's pool are ready
+      try {
+        window.dispatchEvent(new CustomEvent('f1:pool-images-ready', { detail: asOfSeason }));
+      } catch {
+        // ignore environments without window
       }
-    }),
-    mapWithConcurrency(pool.constructors, async (c) => {
-      if (!c.imageUrl) {
-        c.imageUrl =
-          c.constructor.imageUrl ??
-          (await fetchWikiConstructorImage(c.constructor.url));
-      }
-    }),
-  ]);
+    } catch {
+      // ignore; optional images
+    }
+  })();
 
   poolCache.set(asOfSeason, pool);
   return pool;

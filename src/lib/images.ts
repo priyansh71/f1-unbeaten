@@ -2,6 +2,42 @@ import type { FantasyPool } from '../types';
 
 const WIKI_API = 'https://en.wikipedia.org/api/rest_v1';
 const imageCache = new Map<string, string | null>();
+let driversManifest: Record<string, string> | null = null;
+let constructorsManifest: Record<string, string> | null = null;
+
+// attempt to load local manifests (populated at build time by scripts/fetch-images.mjs)
+async function loadLocalManifests() {
+  if (driversManifest !== null || constructorsManifest !== null) return;
+  try {
+    const [d, c] = await Promise.all([
+      fetch('/cache/images/drivers-manifest.json').then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetch('/cache/images/constructors-manifest.json').then((r) => r.ok ? r.json() : null).catch(() => null),
+    ]);
+    driversManifest = d ?? null;
+    constructorsManifest = c ?? null;
+  } catch {
+    // ignore
+    driversManifest = null;
+    constructorsManifest = null;
+  }
+}
+
+function findInManifest(man: Record<string, string> | null, title: string): string | null {
+  if (!man) return null;
+  if (man[title]) return man[title];
+  const u = title.replace(/ /g, '_');
+  if (man[u]) return man[u];
+  const s = title.replace(/_/g, ' ');
+  if (man[s]) return man[s];
+  const enc = encodeURIComponent(title);
+  if (man[enc]) return man[enc];
+  // case-insensitive search
+  const low = title.toLowerCase();
+  for (const k of Object.keys(man)) {
+    if (k.toLowerCase() === low) return man[k];
+  }
+  return null;
+}
 const layoutCache = new Map<string, string | null>();
 
 function wikiTitleFromUrl(url?: string): string | null {
@@ -70,13 +106,24 @@ function scoreConstructorMedia(title: string): number {
 }
 
 async function wikiGet<T>(path: string): Promise<T | null> {
-  try {
-    const res = await fetch(`${WIKI_API}${path}`);
-    if (!res.ok) return null;
-    return (await res.json()) as T;
+  // fetch with simple retry + exponential backoff
+  const maxAttempts = 3;
+  let attempt = 0;
+  while (attempt < maxAttempts) {
+    try {
+      const res = await fetch(`${WIKI_API}${path}`);
+      if (!res.ok) {
+        attempt += 1;
+        await sleep(150 * Math.pow(2, attempt));
+        continue;
+      }
+      return (await res.json()) as T;
   } catch {
-    return null;
+      attempt += 1;
+      await sleep(150 * Math.pow(2, attempt));
+    }
   }
+  return null;
 }
 
 export async function fetchWikiImage(wikiUrl?: string): Promise<string | null> {
@@ -85,6 +132,15 @@ export async function fetchWikiImage(wikiUrl?: string): Promise<string | null> {
 
   const cached = imageCache.get(title);
   if (cached !== undefined) return cached;
+
+  // prefer build-time cached image if available
+  await loadLocalManifests();
+  const foundDriver = findInManifest(driversManifest, title);
+  if (foundDriver) {
+    const local = `/${foundDriver}`;
+    imageCache.set(title, local);
+    return local;
+  }
 
   const data = await wikiGet<{
     thumbnail?: { source: string };
@@ -105,6 +161,15 @@ export async function fetchWikiConstructorImage(
   const cacheKey = `constructor:${title}`;
   const cached = imageCache.get(cacheKey);
   if (cached !== undefined) return cached;
+
+  // prefer build-time cached image if available
+  await loadLocalManifests();
+  const foundConstructor = findInManifest(constructorsManifest, title);
+  if (foundConstructor) {
+    const local = `/${foundConstructor}`;
+    imageCache.set(cacheKey, local);
+    return local;
+  }
 
   const data = await wikiGet<{ items?: WikiMediaItem[] }>(
     `/page/media-list/${encodeURIComponent(title)}`,
@@ -174,24 +239,32 @@ export async function mapWithConcurrency<T, R>(
   return out;
 }
 
-export async function prefetchPoolImages(pool: FantasyPool): Promise<void> {
+export async function prefetchPoolImages(pool: FantasyPool): Promise<FantasyPool> {
+  // create shallow clones of drivers/constructors so we don't mutate the original
+  const drivers = pool.drivers.map((d) => ({ ...d }));
+  const constructors = pool.constructors.map((c) => ({ ...c }));
+
   await Promise.all([
     mapWithConcurrency(
-      pool.drivers.filter((d) => !d.imageUrl),
+      drivers.filter((d) => !d.imageUrl),
       async (d) => {
-        d.imageUrl =
-          d.driver.imageUrl ?? (await fetchWikiImage(d.driver.url));
+        d.imageUrl = d.driver.imageUrl ?? (await fetchWikiImage(d.driver.url));
+        return d.imageUrl;
       },
     ),
     mapWithConcurrency(
-      pool.constructors.filter((c) => !c.imageUrl),
+      constructors.filter((c) => !c.imageUrl),
       async (c) => {
-        c.imageUrl =
-          c.constructor.imageUrl ??
-          (await fetchWikiConstructorImage(c.constructor.url));
+        c.imageUrl = c.constructor.imageUrl ?? (await fetchWikiConstructorImage(c.constructor.url));
+        return c.imageUrl;
       },
     ),
   ]);
+
+  return {
+    drivers,
+    constructors,
+  } as FantasyPool;
 }
 
 export function isSvgImage(url?: string | null): boolean {

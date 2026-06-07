@@ -50,9 +50,133 @@ body {
   gap: 1rem;
 }
 
+.header-nav {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  position: absolute;
+  right: 2rem;
+  top: 1.1rem;
+}
+
+.nav-link {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid transparent;
+  padding: 0.45rem 0.8rem;
+  border-radius: 6px;
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.12s, transform 0.08s;
+}
+
+.nav-link:hover {
+  background: rgba(255,255,255,0.02);
+  transform: translateY(-1px);
+}
+
+.nav-link.active {
+  background: linear-gradient(90deg, rgba(225,6,0,0.18), rgba(225,6,0,0.06));
+  border: 1px solid rgba(225,6,0,0.18);
+}
+
+.nav-label {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.nav-badge {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+.missions-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 0.75rem;
+  border-radius: 6px;
+}
+.missions-cards {
+  display: flex;
+  gap: 0.5rem;
+  flex-direction: column;
+}
+.mission-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+  border: 1px solid var(--border);
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+.mission-card.completed {
+  border-color: rgba(255,215,0,0.6);
+  box-shadow: 0 6px 18px rgba(255,215,0,0.03);
+}
+.mission-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+.mission-progress-bar {
+  background: rgba(255,255,255,0.02);
+  height: 8px;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+.mission-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), rgba(225,6,0,0.6));
+}
+.badge.wins {
+  background: var(--gold);
+  color: #000;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.nav-icon svg {
+  display: block;
+  color: var(--gold);
+}
+
+.nav-link[title] {
+  position: relative;
+}
+
+.nav-link[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  margin-top: 0.45rem;
+  border: 1px solid var(--border);
+}
+
 .f1-logo {
   height: 36px;
   width: auto;
+}
+
+.f1-logo[role="button"] {
+  cursor: pointer;
 }
 
 .brand-text {
@@ -434,6 +558,63 @@ h2 {
   transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
 }
 
+.img-skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.04));
+  border-radius: 6px;
+  width: 64px;
+  height: 64px;
+  display: inline-block;
+}
+
+.constructor-img, .driver-img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.achievements-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 0.75rem;
+  border-radius: 6px;
+}
+
+.achievements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.achievement-row {
+  padding: 0.5rem;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+  border: 1px solid transparent;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.achievement-row.unlocked {
+  border-color: rgba(255,215,0,0.25);
+  box-shadow: 0 6px 18px rgba(255,215,0,0.03);
+}
+
+.achievements-panel h3 {
+  margin-bottom: 0.5rem;
+}
+
+.achievements-list .muted.small {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.recent-unlocked h4 {
+  margin: 0.5rem 0 0.25rem;
+}
+
 .pick-card.driver-card {
   flex-direction: row;
   align-items: center;
@@ -736,11 +917,13 @@ h2 {
 .standings-list {
   background: var(--bg-card);
   border: 1px solid var(--border);
+  margin-top: 0.25rem;
 }
 
 .standings-row {
   display: grid;
-  grid-template-columns: 2rem 1fr 2.5rem 3rem;
+  /* columns: pos | name | season | wins | date/time */
+  grid-template-columns: 2rem 1fr 4rem 3.25rem 7rem;
   gap: 0.5rem;
   padding: 0 0.75rem;
   border-bottom: 1px solid var(--border);

@@ -1,8 +1,5 @@
-import { useMemo, useState } from 'react';
-import {
-  constructorPlaceholder,
-  driverPlaceholder,
-} from '../lib/images';
+import { useMemo, useState, useEffect } from 'react';
+// image helpers intentionally not imported here; images load in background
 import type {
   ConstructorOption,
   DriverOption,
@@ -30,6 +27,13 @@ export function BuildPhase({
   onShowCareerWinsChange,
   onComplete,
 }: Props) {
+  // small state to trigger rerender when background images finish loading
+  const [, setRefresh] = useState(false);
+  useEffect(() => {
+    const handler = () => setRefresh((v) => !v);
+    window.addEventListener('f1:pool-images-ready', handler as EventListener);
+    return () => window.removeEventListener('f1:pool-images-ready', handler as EventListener);
+  }, []);
   const [constructorId, setConstructorId] = useState<string | null>(null);
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
   const [search, setSearch] = useState('');
@@ -135,15 +139,15 @@ export function BuildPhase({
                 setConstructorId(c.constructor.constructorId)
               }
             >
-              <img
-                src={
-                  c.imageUrl ??
-                  c.constructor.imageUrl ??
-                  constructorPlaceholder(c.constructor.name)
-                }
-                alt={c.constructor.name}
-                className="constructor-img"
-              />
+              {c.imageUrl ? (
+                <img
+                  src={c.imageUrl}
+                  alt={c.constructor.name}
+                  className="constructor-img"
+                />
+              ) : (
+                <div className="img-skeleton" aria-hidden />
+              )}
               <div className="pick-card-body">
                 <span className="pick-name">{c.constructor.name}</span>
                 {showCareerWins && (
@@ -181,15 +185,15 @@ export function BuildPhase({
               onClick={() => toggleDriver(d.driver.driverId)}
               disabled={!constructorId}
             >
-              <img
-                src={
-                  d.imageUrl ??
-                  d.driver.imageUrl ??
-                  driverPlaceholder(d.driver.code)
-                }
-                alt={driverLabel(d.driver)}
-                className="driver-img"
-              />
+              {d.imageUrl ? (
+                <img
+                  src={d.imageUrl}
+                  alt={driverLabel(d.driver)}
+                  className="driver-img"
+                />
+              ) : (
+                <div className="img-skeleton" aria-hidden />
+              )}
               <div className="pick-card-body">
                 <span className="pick-name">
                   {d.driver.code && (
